@@ -6,7 +6,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   APP_PASSWORD: z.string().min(1, 'APP_PASSWORD is required'),
   SESSION_SECRET: z.string().min(16, 'SESSION_SECRET must be at least 16 characters'),
-  CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
+  // The frontend's origin for CORS; a trailing slash would never match the browser's Origin header.
+  CLIENT_ORIGIN: z.string().default('http://localhost:5173').transform((s) => s.replace(/\/+$/, '')),
   // Optional until the matching feature is used; services report a clear error when missing.
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),

@@ -1,23 +1,15 @@
 import 'dotenv/config';
-import cron from 'node-cron';
 import { createApp } from './app';
 import { getConfig, isProduction } from './config';
-import { todayIso } from './domain/dates';
-import { JobsBusyError, runJobs } from './jobs/runJobs';
+import { startDevScheduler } from './scheduler';
 
-const { PORT } = getConfig();
-createApp().listen(PORT, () => {
-  console.log(`server listening on http://localhost:${PORT}`);
-});
-
-// Dev only: run the jobs every 10 minutes. In production an external scheduler calls POST /jobs/run.
-if (!isProduction()) {
-  cron.schedule('*/10 * * * *', () => {
-    runJobs(todayIso())
-      .then((s) => console.log('scheduled jobs:', JSON.stringify(s)))
-      .catch((err) => {
-        if (!(err instanceof JobsBusyError)) console.error('scheduled jobs failed:', err.message);
-      });
-  });
-  console.log('dev scheduler: jobs run every 10 minutes');
+const config = getConfig();
+if (isProduction()) {
+  const missing = (['JOB_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI', 'GEMINI_API_KEY', 'GEMINI_MODEL'] as const).filter((k) => !config[k]);
+  if (missing.length) console.warn(`warning: not set in production: ${missing.join(', ')}`);
 }
+
+createApp().listen(config.PORT, () => {
+  console.log(`server listening on port ${config.PORT} (${config.NODE_ENV})`);
+});
+startDevScheduler();
