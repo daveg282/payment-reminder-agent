@@ -7,9 +7,11 @@ import { errorHandler, requireAuth } from './http';
 import { authRouter } from './routes/auth';
 import { customersRouter } from './routes/customers';
 import { dashboardRouter } from './routes/dashboard';
+import { googleAuthRouter } from './routes/googleAuth';
 import { importRouter } from './routes/import';
 import { invoicesRouter } from './routes/invoices';
 import { jobsRouter } from './routes/jobs';
+import { remindersRouter } from './routes/reminders';
 
 export function createApp() {
   const config = getConfig();
@@ -35,6 +37,7 @@ export function createApp() {
   app.get('/health', (_req, res) => {
     res.json({ ok: true });
   });
+  app.use('/auth/google', requireAuth, googleAuthRouter); // needs the app login
   app.use('/auth', authRouter);
 
   // Everything below needs a logged-in session.
@@ -43,6 +46,7 @@ export function createApp() {
   app.use('/dashboard', dashboardRouter);
   app.use('/customers', customersRouter);
   app.use('/invoices', invoicesRouter);
+  app.use('/reminders', remindersRouter);
   app.use('/jobs', jobsRouter);
 
   app.use((_req, res) => {

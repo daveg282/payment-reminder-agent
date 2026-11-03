@@ -67,3 +67,17 @@ export async function markPaid(db: Db, id: string, paidDate: string): Promise<In
   );
   return rows[0];
 }
+
+/** Clears promise dates that have passed on unpaid invoices. Returns the invoices whose promise broke. */
+export async function clearBrokenPromises(db: Db, today: string): Promise<Array<{ id: string; promise_date: string }>> {
+  const { rows } = await db.query(
+    `with broken as (
+       select id, promise_date from invoices where status = 'open' and promise_date is not null and promise_date < $1
+       for update
+     )
+     update invoices i set promise_date = null from broken where i.id = broken.id
+     returning i.id, broken.promise_date`,
+    [today],
+  );
+  return rows;
+}
