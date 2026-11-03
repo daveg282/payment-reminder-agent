@@ -1,0 +1,13 @@
+kind,customer_name,customer_email,invoice_ref,amount,currency,issue_date,due_date,billing_day,amount_per_period,recurring_start
+one_off,Aster Design,aster@example.com,INV-1001,1200.00,USD,2026-09-01,2026-09-30,,,
+one_off,Aster Design,aster@example.com,INV-1002,450.50,USD,2026-10-01,2026-10-31,,,
+one_off,Birch Studio,birch@example.com,INV-2001,800,USD,2026-10-01,2026-13-45,,,
+recurring,Cedar Flat Tenant,cedar@example.com,,,USD,,,1,1500,2026-08-01
+one_off,Dune Media,dune@example.com,INV-3001,,USD,2026-10-05,2026-11-04,,,
+one_off,Elm Consulting,elm-at-example.com,INV-4001,620,USD,2026-10-02,2026-11-01,,,
+one_off,Fjord Labs,fjord@example.com,INV-5001,3000,EUR,2026-10-15,2026-11-14,,,
+recurring,Grove Retainer,grove@example.com,,,USD,,,31,900,2026-09-01
+one_off,Harbor Co,harbor@example.com,INV-6001,640,USD,2026-10-20,2026-10-05,,,
+recurring,Iris Retainer,iris@example.com,,,USD,,,15,2000,2026-07-15
+one_off,Juniper Events,juniper@example.com,INV-7001,975.25,,2026-10-10,2026-11-09,,,
+one_off,Aster Design,aster@example.com,INV-1001,1200.00,USD,2026-09-01,2026-09-30,,,
