@@ -1,0 +1,9 @@
+kind,customer_name,customer_email,invoice_ref,amount,currency,issue_date,due_date,billing_day,amount_per_period,recurring_start
+one_off,Saffron Kitchen,billing@saffronkitchen.example,SK-310,1280.00,USD,2026-10-01,2026-10-31,,,
+one_off,Tidewater Surf School,office@tidewater.example,TW-77,960.00,USD,2026-10-10,2026-11-09,,,
+one_off,Granite Print House,accounts@graniteprint.example,GP-1202,2150.00,USD,2026-09-20,2026-31-10,,,
+recurring,Maple Court · Flat 4D,flat4d@maplecourt.example,,,USD,,,1,1500.00,2026-11-01
+one_off,Willow Yoga,hello@willowyoga,WY-18,420.00,USD,2026-10-15,2026-11-14,,,
+recurring,Beacon Coworking,ap@beaconcowork.example,,,USD,,,30,1800.00,2026-11-05
+one_off,Atlas Freight,payables@atlasfreight.example,AF-5521,3400.00,USD,2026-09-01,2026-10-01,,,
+one_off,Saffron Kitchen,billing@saffronkitchen.example,SK-311,640.00,USD,2026-10-20,2026-11-19,,,

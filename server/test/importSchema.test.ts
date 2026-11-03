@@ -126,3 +126,15 @@ describe('sample.csv (the download offered in the UI)', () => {
     expect(valid).toHaveLength(5);
   });
 });
+
+describe('demo-import.csv (used live in the video)', () => {
+  it('has 8 rows: 5 valid and 3 planted errors', () => {
+    const { valid, errors } = validateRows(parseImportCsv(readFileSync(path.join(__dirname, '..', '..', 'demo-import.csv'))));
+    expect(valid).toHaveLength(5);
+    expect(errors).toEqual([
+      { row: 4, field: 'due_date', message: 'due date is not a valid date' },
+      { row: 6, field: 'customer_email', message: 'customer email is not a valid email' },
+      { row: 7, field: 'billing_day', message: 'billing day must be between 1 and 28' },
+    ]);
+  });
+});

@@ -13,7 +13,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "migrate": "tsx src/migrate.ts",
-    "migrate:prod": "node dist/migrate.js"
+    "migrate:prod": "node dist/migrate.js",
+    "seed:demo": "tsx src/seedDemo.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
