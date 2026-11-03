@@ -39,12 +39,12 @@ describe('date rule: "next <weekday>" = nearest upcoming occurrence after today'
 
 describe('stripQuoted', () => {
   it('drops the Gmail "On … wrote:" block and everything after it', () => {
-    const text = "Sorry, I'll pay next Friday.\n\nThanks\n\nOn Tue, Nov 3, 2026 at 12:47 PM Dawit Girma <dawitggtw@gmail.com> wrote:\n> Hi Demo Client,\n> invoice DEMO-001 is overdue";
+    const text = "Sorry, I'll pay next Friday.\n\nThanks\n\nOn Tue, Nov 3, 2026 at 12:47 PM Sam Sender <sam@example.com> wrote:\n> Hi Demo Client,\n> invoice DEMO-001 is overdue";
     expect(stripQuoted(text)).toBe("Sorry, I'll pay next Friday.\n\nThanks");
   });
 
   it('handles the "wrote:" line wrapped onto the next line', () => {
-    const text = 'Paid already.\r\n\r\nOn Tue, Nov 3, 2026 at 12:47 PM Dawit Girma <\r\ndawitggtw@gmail.com> wrote:\r\n\r\n> old text';
+    const text = 'Paid already.\r\n\r\nOn Tue, Nov 3, 2026 at 12:47 PM Sam Sender <\r\nsam@example.com> wrote:\r\n\r\n> old text';
     expect(stripQuoted(text)).toBe('Paid already.');
   });
 
@@ -57,7 +57,7 @@ describe('stripQuoted', () => {
 
 describe('message helpers', () => {
   it('addressOf extracts the bare lower-case address', () => {
-    expect(addressOf('"Demo Client" <DawitGirma282@Gmail.com>')).toBe('dawitgirma282@gmail.com');
+    expect(addressOf('"Demo Client" <Demo.Client@Example.com>')).toBe('demo.client@example.com');
     expect(addressOf('a@b.com')).toBe('a@b.com');
   });
 
