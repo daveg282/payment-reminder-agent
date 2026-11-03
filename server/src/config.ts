@@ -14,6 +14,7 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().optional(),
   SENDER_NAME: z.string().default(''),
+  JOB_SECRET: z.string().optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;

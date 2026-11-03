@@ -22,4 +22,5 @@ process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
 process.env.GOOGLE_REDIRECT_URI = 'http://localhost:4000/auth/google/callback';
 process.env.CLIENT_ORIGIN = 'http://localhost:5173';
 process.env.SENDER_NAME = 'Sam Sender';
+process.env.JOB_SECRET = 'test-job-secret';
 process.env.SESSION_SECRET = 'test-session-secret-1234567890';

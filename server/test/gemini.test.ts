@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetConfig } from '../src/config';
 import { ReminderFacts, templateReminder } from '../src/domain/templates';
-import { buildDraftPrompt, draftReminder } from '../src/services/gemini';
+import { buildDraftPrompt, draftFacts, draftReminder } from '../src/services/gemini';
 
 const generateContent = vi.hoisted(() => vi.fn());
 vi.mock('@google/genai', () => ({
@@ -67,11 +67,31 @@ describe('draftReminder', () => {
     expect(generateContent).not.toHaveBeenCalled();
   });
 
-  it('puts the real facts and safety rules in the prompt', () => {
+  it('puts the real facts, format and safety rules in the prompt', () => {
     const prompt = buildDraftPrompt(facts);
-    for (const s of ['Aster Design', 'INV-1001', '$1,200.00', '34 day(s) overdue', 'under 120 words', 'No threats, no legal claims']) {
+    for (const s of ['Aster Design', 'INV-1001', '$1,200.00', '34 days overdue', 'under 120 words', 'No threats, no legal claims', '2–3 short paragraphs', '"Sam Sender"']) {
       expect(prompt).toContain(s);
     }
+  });
+
+  it.each([
+    [-3, 'due in 3 days'],
+    [-1, 'due in 1 day,'],
+    [0, 'due today'],
+    [1, '1 day overdue'],
+    [10, '10 days overdue'],
+  ])('facts sent to Gemini never say "day(s)" or a stage count (daysLate %i)', (daysLate, phrase) => {
+    for (const stage of [1, 2, 3, 4]) {
+      const sent = [...draftFacts({ ...facts, daysLate, stage }), buildDraftPrompt({ ...facts, daysLate, stage })].join('\n');
+      expect(sent).toContain(phrase);
+      expect(sent).not.toMatch(/day\(s\)/i);
+      expect(sent).not.toMatch(/\bof 4\b|reminder (number|#)\s*\d|\bstage\b/i);
+    }
+  });
+
+  it('rejects a Gemini draft that says "day(s)"', async () => {
+    generateContent.mockResolvedValue(reply({ subject: 'Invoice INV-1001', body: 'Hi Aster Design, invoice INV-1001 is 34 day(s) overdue. Thanks.' }));
+    expect((await draftReminder(facts)).draftedBy).toBe('template');
   });
 });
 

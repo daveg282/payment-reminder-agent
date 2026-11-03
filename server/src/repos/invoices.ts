@@ -81,3 +81,9 @@ export async function clearBrokenPromises(db: Db, today: string): Promise<Array<
   );
   return rows;
 }
+
+/** Sets a promise-to-pay date on an open invoice (pauses reminders until then). Returns true if set. */
+export async function setPromiseDate(db: Db, id: string, promiseDate: string): Promise<boolean> {
+  const { rowCount } = await db.query(`update invoices set promise_date = $2 where id = $1 and status = 'open'`, [id, promiseDate]);
+  return rowCount === 1;
+}

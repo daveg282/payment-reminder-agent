@@ -7,6 +7,7 @@ import { getConfig } from '../config';
 import { HttpError } from '../http';
 import { getGoogleToken } from '../repos/googleTokens';
 import { getInvoice, listInvoices } from '../repos/invoices';
+import { invoicesAwaitingReview } from '../repos/replies';
 import {
   claimForSending,
   getReminder,
@@ -32,14 +33,15 @@ export async function createDueDrafts(
   today: string,
   brokenPromises: Map<string, string> = new Map(),
 ): Promise<{ draftsCreated: number; draftsByAi: number; draftsByTemplate: number }> {
-  const [invoices, stages] = await Promise.all([listInvoices(db), listAllStages(db)]);
+  const [invoices, stages, awaitingReview] = await Promise.all([listInvoices(db), listAllStages(db), invoicesAwaitingReview(db)]);
   const stagesByInvoice = new Map<string, typeof stages>();
   for (const s of stages) stagesByInvoice.set(s.invoice_id, [...(stagesByInvoice.get(s.invoice_id) ?? []), s]);
   const invoicesByCustomer = new Map<string, typeof invoices>();
   for (const i of invoices) invoicesByCustomer.set(i.customer_id, [...(invoicesByCustomer.get(i.customer_id) ?? []), i]);
 
   const result = { draftsCreated: 0, draftsByAi: 0, draftsByTemplate: 0 };
-  for (const inv of invoices.filter((i) => i.status === 'open')) {
+  // A dispute, "already paid" or unclear reply pauses new drafts until the user reviews it.
+  for (const inv of invoices.filter((i) => i.status === 'open' && !awaitingReview.has(i.id))) {
     const risk = scoreCustomer(invoicesByCustomer.get(inv.customer_id) ?? [], today).label;
     const promise_date = brokenPromises.get(inv.id) ?? inv.promise_date;
     const due = nextStageDue({ ...inv, promise_date }, stagesByInvoice.get(inv.id) ?? [], risk, today);

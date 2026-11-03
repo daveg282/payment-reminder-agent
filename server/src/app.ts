@@ -10,7 +10,8 @@ import { dashboardRouter } from './routes/dashboard';
 import { googleAuthRouter } from './routes/googleAuth';
 import { importRouter } from './routes/import';
 import { invoicesRouter } from './routes/invoices';
-import { jobsRouter } from './routes/jobs';
+import { jobsRouter, publicJobsRouter } from './routes/jobs';
+import { repliesRouter } from './routes/replies';
 import { remindersRouter } from './routes/reminders';
 
 export function createApp() {
@@ -33,12 +34,13 @@ export function createApp() {
     }),
   );
 
-  // Public routes. (`POST /jobs/run`, guarded by X-Job-Secret, is added here in Brief 03.)
+  // Public routes.
   app.get('/health', (_req, res) => {
     res.json({ ok: true });
   });
   app.use('/auth/google', requireAuth, googleAuthRouter); // needs the app login
   app.use('/auth', authRouter);
+  app.use('/jobs', publicJobsRouter); // POST /jobs/run, guarded by X-Job-Secret instead of a session
 
   // Everything below needs a logged-in session.
   app.use(requireAuth);
@@ -47,6 +49,7 @@ export function createApp() {
   app.use('/customers', customersRouter);
   app.use('/invoices', invoicesRouter);
   app.use('/reminders', remindersRouter);
+  app.use('/replies', repliesRouter);
   app.use('/jobs', jobsRouter);
 
   app.use((_req, res) => {

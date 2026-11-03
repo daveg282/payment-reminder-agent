@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const gmail = vi.hoisted(() => ({
   send: vi.fn(),
   messageIdHeader: vi.fn(),
+  threadMessages: vi.fn(),
+  messageText: vi.fn(),
 }));
 vi.mock('../src/services/gmail', () => ({ gmailFor: () => gmail }));
 
@@ -39,6 +41,7 @@ describe.skipIf(!hasTestDb)('reminders: drafts, approval and send (mocked Gmail)
   beforeEach(() => {
     gmail.send.mockReset().mockResolvedValue({ messageId: 'gm-1', threadId: 'th-1' });
     gmail.messageIdHeader.mockReset().mockResolvedValue('<first@mail.gmail.com>');
+    gmail.threadMessages.mockReset().mockResolvedValue([]); // no customer replies in these tests
     vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 

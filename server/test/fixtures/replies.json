@@ -1,0 +1,29 @@
+{
+  "today": "2026-11-03",
+  "dueDate": "2026-10-24",
+  "invoiceRef": "DEMO-001",
+  "amount": 500,
+  "currency": "USD",
+  "replies": [
+    { "id": 1, "text": "Sorry for the delay! I'll pay next Friday.", "expected": "promise_to_pay", "date": "2026-11-06" },
+    { "id": 2, "text": "Hi, apologies, this slipped through. I'll transfer the full amount tomorrow.", "expected": "promise_to_pay", "date": "2026-11-04" },
+    { "id": 3, "text": "We will pay the invoice in full on November 20.", "expected": "promise_to_pay", "date": "2026-11-20" },
+    { "id": 4, "text": "Payment will go out on the 15th, when our next payment run happens.", "expected": "promise_to_pay", "date": "2026-11-15" },
+    { "id": 5, "text": "I will settle this on 17/11/2026, sorry again.", "expected": "promise_to_pay", "date": "2026-11-17" },
+    { "id": 6, "text": "Our finance team pays suppliers on Monday the 9th, your invoice will be included.", "expected": "promise_to_pay", "date": "2026-11-09" },
+    { "id": 7, "text": "This invoice is wrong. We agreed on $300 for this job, not $500. Please send a corrected invoice.", "expected": "dispute", "date": null },
+    { "id": 8, "text": "We never received the second half of the delivery, so we won't pay this until that is sorted out.", "expected": "dispute", "date": null },
+    { "id": 9, "text": "We cancelled this contract back in August and should not have been billed for this period.", "expected": "dispute", "date": null },
+    { "id": 10, "text": "The work was not completed as agreed. I'm disputing this invoice until the remaining items are delivered.", "expected": "dispute", "date": null },
+    { "id": 11, "text": "I already paid this last week by bank transfer, please check your account.", "expected": "already_paid", "date": null },
+    { "id": 12, "text": "Paid on October 28, transfer reference TRX-88213.", "expected": "already_paid", "date": null },
+    { "id": 13, "text": "We sent the payment via PayPal on Friday, you should have it by now.", "expected": "already_paid", "date": null },
+    { "id": 14, "text": "This was settled with cheque #1042, which cleared on October 30.", "expected": "already_paid", "date": null },
+    { "id": 15, "text": "I'm out of the office until November 10 with limited access to email. For urgent matters contact the front desk.", "expected": "other", "date": null },
+    { "id": 16, "text": "Thanks for the reminder!", "expected": "other", "date": null },
+    { "id": 17, "text": "Quick question: does the $500 include VAT?", "expected": "other", "date": null },
+    { "id": 18, "text": "Could you resend the invoice as a PDF? I can't find the original email.", "expected": "other", "date": null },
+    { "id": 19, "text": "Please send future invoices to accounts@demo-client.example instead of me.", "expected": "other", "date": null },
+    { "id": 20, "text": "Received, I'll forward this to our accounting department.", "expected": "other", "date": null }
+  ]
+}

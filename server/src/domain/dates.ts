@@ -46,3 +46,32 @@ export function oneYearBefore(value: string): string {
   const lastDay = new Date(Date.UTC(year - 1, month, 0)).getUTCDate();
   return isoDate(year - 1, month, Math.min(day, lastDay));
 }
+
+export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+
+export function weekdayOf(value: string): (typeof WEEKDAYS)[number] {
+  return WEEKDAYS[new Date(toUtc(value)).getUTCDay()];
+}
+
+/**
+ * Date rule for relative weekdays in customer replies:
+ * "next <weekday>" (also "this <weekday>" / "on <weekday>") means the nearest upcoming occurrence of
+ * that weekday strictly AFTER today. E.g. on Tue 2026-11-03, "next Friday" = Fri 2026-11-06, and
+ * "next Tuesday" = Tue 2026-11-10 (never today).
+ */
+export function nextWeekday(today: string, weekday: (typeof WEEKDAYS)[number]): string {
+  const target = WEEKDAYS.indexOf(weekday);
+  const current = new Date(toUtc(today)).getUTCDay();
+  const ahead = ((target - current + 7) % 7) || 7;
+  return addDays(today, ahead);
+}
+
+/**
+ * "<weekday> next week" means that weekday in the following Monday–Sunday week.
+ * E.g. on Tue 2026-11-03, "Friday next week" = Fri 2026-11-13.
+ */
+export function weekdayNextWeek(today: string, weekday: (typeof WEEKDAYS)[number]): string {
+  const current = new Date(toUtc(today)).getUTCDay();
+  const nextMonday = addDays(today, ((8 - current) % 7) || 7);
+  return addDays(nextMonday, (WEEKDAYS.indexOf(weekday) + 6) % 7);
+}
