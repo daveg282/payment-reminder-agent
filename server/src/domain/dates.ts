@@ -24,3 +24,25 @@ export function parseIso(value: string): { year: number; month: number; day: num
   const [year, month, day] = value.split('-').map(Number);
   return { year, month, day };
 }
+
+const toUtc = (value: string) => {
+  const { year, month, day } = parseIso(value);
+  return Date.UTC(year, month - 1, day);
+};
+
+/** Whole days from `from` to `to` (positive when `to` is later). */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((toUtc(to) - toUtc(from)) / 86_400_000);
+}
+
+export function addDays(value: string, days: number): string {
+  const d = new Date(toUtc(value) + days * 86_400_000);
+  return isoDate(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+}
+
+/** Same calendar day one year earlier (Feb 29 → Feb 28). */
+export function oneYearBefore(value: string): string {
+  const { year, month, day } = parseIso(value);
+  const lastDay = new Date(Date.UTC(year - 1, month, 0)).getUTCDate();
+  return isoDate(year - 1, month, Math.min(day, lastDay));
+}

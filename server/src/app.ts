@@ -6,6 +6,7 @@ import { getConfig, isProduction } from './config';
 import { errorHandler, requireAuth } from './http';
 import { authRouter } from './routes/auth';
 import { customersRouter } from './routes/customers';
+import { dashboardRouter } from './routes/dashboard';
 import { importRouter } from './routes/import';
 import { invoicesRouter } from './routes/invoices';
 import { jobsRouter } from './routes/jobs';
@@ -39,6 +40,7 @@ export function createApp() {
   // Everything below needs a logged-in session.
   app.use(requireAuth);
   app.use('/import', importRouter);
+  app.use('/dashboard', dashboardRouter);
   app.use('/customers', customersRouter);
   app.use('/invoices', invoicesRouter);
   app.use('/jobs', jobsRouter);

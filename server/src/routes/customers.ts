@@ -1,13 +1,21 @@
 import { Router } from 'express';
 import { getPool } from '../db';
-import { HttpError, parseOr400, uuidParam } from '../http';
+import { scoreCustomer } from '../domain/risk';
+import { HttpError, requestToday, uuidParam } from '../http';
 import { getCustomer, listCustomers } from '../repos/customers';
 import { listInvoices } from '../repos/invoices';
 
 export const customersRouter = Router();
 
-customersRouter.get('/', async (_req, res) => {
-  res.json(await listCustomers(getPool()));
+customersRouter.get('/', async (req, res) => {
+  const today = requestToday(req);
+  const [customers, invoices] = await Promise.all([listCustomers(getPool()), listInvoices(getPool())]);
+  res.json(
+    customers.map((c) => {
+      const { label, reason } = scoreCustomer(invoices.filter((i) => i.customer_id === c.id), today);
+      return { ...c, risk: { label, reason } };
+    }),
+  );
 });
 
 customersRouter.get('/:id', async (req, res) => {
