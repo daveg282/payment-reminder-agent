@@ -4,6 +4,9 @@ A payment reminder agent for anyone who is owed money — freelancers, agencies,
 
 Built for Brain³ (Level 1, Full Stack AI Web Developer). All data in this repo is invented.
 
+**Live:** app — https://payment-reminder-agent-1.onrender.com · API — https://payment-reminder-agent.onrender.com ([`/health`](https://payment-reminder-agent.onrender.com/health))
+(free tier: the first request after a quiet spell can take ~30–60 s while the API wakes up)
+
 ## Features
 
 - **Customer risk score** — a rule-based `low` / `medium` / `high` label with a one-sentence reason, e.g. *“paid 3 of the last 3 invoices more than 14 days late, and has an invoice 45 days overdue.”* High-risk customers get a firmer tone at every stage.
@@ -103,14 +106,22 @@ The suite covers the import rules and transaction rollback, risk labels for 20 i
 
 ## Deploy (Render free tier)
 
-- **API** — Web Service, root directory = repo root. Build: `npm ci --include=dev && npm run build -w server && npm run migrate:prod -w server`. Start: `npm start -w server`. Env: everything above plus `NODE_ENV=production`.
-- **UI** — Static Site, root directory = repo root. Build: `npm ci --include=dev && npm run build -w client`. Publish: `client/dist`. Env: `VITE_API_URL`. Rewrite `/*` → `/index.html`.
+| | API — Web Service | UI — Static Site |
+|---|---|---|
+| URL | https://payment-reminder-agent.onrender.com | https://payment-reminder-agent-1.onrender.com |
+| Root directory | repo root (the lockfile lives there) | repo root |
+| Build | `npm ci --include=dev && npm run build -w server && npm run migrate:prod -w server` | `npm ci --include=dev && npm run build -w client` |
+| Start / publish | `npm start -w server` | publish `client/dist` |
+| Env | everything above (not `TEST_DATABASE_URL`, `DEMO_LIVE_EMAIL`, `PORT`) plus `NODE_ENV=production`, `GOOGLE_REDIRECT_URI=https://payment-reminder-agent.onrender.com/auth/google/callback`, `CLIENT_ORIGIN=https://payment-reminder-agent-1.onrender.com` | `VITE_API_URL=https://payment-reminder-agent.onrender.com` |
+| Routing | health check `/health` | **Rewrite** (not Redirect) `/*` → `/index.html` |
+
+`--include=dev` matters: Render installs with `NODE_ENV=production`, which would otherwise skip TypeScript. The production redirect URI is also added to the Google OAuth client.
 
 In production the session cookie is `SameSite=None; Secure` (the UI and API are on different `onrender.com` subdomains), the app trusts Render's proxy, CORS only allows `CLIENT_ORIGIN`, and the in-process scheduler is off.
 
 ### Free-tier sleep, and the fix
 
-A free Render web service sleeps after ~15 minutes without traffic, so an in-process timer would stop firing. Instead, **cron-job.org calls `POST /jobs/run` every 10 minutes** with the `X-Job-Secret` header. The endpoint answers `202` right away and runs the checks in the background (an in-process lock refuses overlapping runs with `409`), so the scheduler never times out. The first call after a sleep wakes the service (a 30–60 s cold start); every run is logged in `job_runs`, and `GET /jobs/runs/latest` shows the last one.
+A free Render web service sleeps after ~15 minutes without traffic, so an in-process timer would stop firing. Instead, **cron-job.org calls `POST https://payment-reminder-agent.onrender.com/jobs/run` every 10 minutes** with the `X-Job-Secret` header (timeout 60 s). The endpoint answers `202` right away and runs the checks in the background (an in-process lock refuses overlapping runs with `409`), so the scheduler never times out. The first call after a sleep wakes the service (a 30–60 s cold start); every run is logged in `job_runs`, and `GET /jobs/runs/latest` shows the last one.
 
 ## Scope and limits
 
