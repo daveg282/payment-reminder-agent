@@ -15,7 +15,9 @@ let cached: Config | undefined;
 
 export function getConfig(): Config {
   if (!cached) {
-    const parsed = envSchema.safeParse(process.env);
+    // `KEY=` in .env means "not set", so blank values fall back to the defaults.
+    const env = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== undefined && v.trim() !== ''));
+    const parsed = envSchema.safeParse(env);
     if (!parsed.success) {
       const problems = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`).join('\n');
       throw new Error(`Invalid environment:\n${problems}`);
