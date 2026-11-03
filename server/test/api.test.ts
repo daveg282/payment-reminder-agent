@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 import { getPool } from '../src/db';
 import { count, hasTestDb, loggedInAgent, useTestDb } from './helpers';
@@ -94,5 +94,16 @@ describe.skipIf(!hasTestDb)('customers, invoices and recurring API', () => {
 
     await agent.post(`/invoices/${invoiceId}/mark-paid`).send({ paid_date: '2026-02-30' }).expect(400);
     await agent.post('/invoices/00000000-0000-0000-0000-000000000000/mark-paid').send({}).expect(404);
+  });
+});
+
+describe('database pool', () => {
+  it('handles errors from idle connections instead of crashing the process', async () => {
+    const pool = getPool();
+    expect(pool.listenerCount('error')).toBeGreaterThan(0);
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => pool.emit('error', new Error('read EADDRNOTAVAIL'), {} as never)).not.toThrow();
+    expect(log).toHaveBeenCalledWith('database connection dropped (will reconnect):', 'read EADDRNOTAVAIL');
+    log.mockRestore();
   });
 });

@@ -23,7 +23,12 @@ export function getPool(): Pool {
       // Supabase requires TLS; its pooler certificate is not in Node's default CA bundle.
       ssl: needsSsl(connectionString) ? { rejectUnauthorized: false } : undefined,
       max: 5,
+      // Close idle connections before the Supabase pooler (or a network change) drops them.
+      idleTimeoutMillis: 30_000,
     });
+    // An idle connection that breaks emits 'error' on the pool; unhandled, that would crash the
+    // process. pg already discards the broken client, so log it and carry on.
+    pool.on('error', (err) => console.error('database connection dropped (will reconnect):', err.message));
   }
   return pool;
 }
