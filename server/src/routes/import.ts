@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { Request, Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
@@ -28,6 +29,11 @@ async function readUpload(req: Request, res: import('express').Response) {
 }
 
 export const importRouter = Router();
+
+// A clean example file the user can download, fill in and upload.
+importRouter.get('/sample.csv', (_req, res) => {
+  res.download(path.join(__dirname, '..', '..', 'test', 'fixtures', 'sample.csv'), 'payment-reminder-sample.csv');
+});
 
 // Validates only — saves nothing.
 importRouter.post('/preview', async (req, res) => {

@@ -84,6 +84,7 @@ export const expected = {
     { customerId: 'A', name: 'Alder Architects', invoiceRef: 'INV-A1', amount: 5000, currency: 'USD', promiseDate: '2026-11-03' },
     { customerId: 'B', name: 'Basil Bistro', invoiceRef: 'INV-B1', amount: 3000, currency: 'USD', promiseDate: '2026-11-09' },
   ],
+  repliesNeedingAttention: 0,
 };
 
 /** Replace customer keys in the expected summary with real ids. */

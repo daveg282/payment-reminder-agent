@@ -53,6 +53,17 @@ describe('summarize with mixed currencies', () => {
     expect(s.callFirst.map((c) => [c.invoiceRef, c.currency])).toEqual([['1', 'USD'], ['3', 'USD']]);
   });
 
+  it('counts only new dispute / already_paid / needs_review replies as needing attention', () => {
+    const replies = [
+      { status: 'new' as const, classification: 'dispute' },
+      { status: 'new' as const, classification: 'needs_review' },
+      { status: 'new' as const, classification: 'already_paid' },
+      { status: 'new' as const, classification: 'promise_to_pay' },
+      { status: 'reviewed' as const, classification: 'dispute' },
+    ];
+    expect(summarize([], [], replies, TODAY).repliesNeedingAttention).toBe(3);
+  });
+
   it('returns zeros for an empty book', () => {
     const s = summarize([], [], [], TODAY);
     expect(s).toMatchObject({ currency: null, totalOwed: 0, totalOverdue: 0, byCurrency: [], callFirst: [], promisesThisWeek: [] });

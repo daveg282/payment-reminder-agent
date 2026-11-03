@@ -118,3 +118,11 @@ describe('parseImportCsv', () => {
     expect(() => parseImportCsv('kind,customer_name,customer_email,invoice_ref,amount,currency,issue_date,due_date,billing_day,amount_per_period,recurring_start\n')).toThrow(/no data rows/);
   });
 });
+
+describe('sample.csv (the download offered in the UI)', () => {
+  it('is clean: every row valid', () => {
+    const { valid, errors } = validateRows(parseImportCsv(readFileSync(path.join(__dirname, 'fixtures', 'sample.csv'))));
+    expect(errors).toEqual([]);
+    expect(valid).toHaveLength(5);
+  });
+});

@@ -46,6 +46,48 @@ describe.skipIf(!hasTestDb)('dashboard API', () => {
     });
   });
 
+  it('GET /dashboard/counts gives the nav badge counts', async () => {
+    const ids = await seedDashboard();
+    const db = getPool();
+    const { rows: [inv] } = await db.query(`select id from invoices where invoice_ref = 'INV-A1'`);
+    await db.query(
+      `insert into reminders (invoice_id, stage, tone, subject, body, status) values ($1, 1, 'friendly', 's', 'b', 'draft'), ($1, 2, 'firm', 's', 'b', 'failed'), ($1, 3, 'firm', 's', 'b', 'sent')`,
+      [inv.id],
+    );
+    await db.query(
+      `insert into replies (gmail_message_id, gmail_thread_id, invoice_id, customer_id, classification, snippet, received_at, status) values
+       ('m1', 't1', $1, $2, 'dispute', 'x', now(), 'new'), ('m2', 't1', $1, $2, 'promise_to_pay', 'x', now(), 'new'), ('m3', 't1', $1, $2, 'needs_review', 'x', now(), 'reviewed')`,
+      [inv.id, ids.A],
+    );
+    const agent = await loggedInAgent();
+    expect((await agent.get('/dashboard/counts').expect(200)).body).toEqual({ drafts: 2, failed: 1, repliesNew: 2, repliesNeedingAttention: 1 });
+    expect((await agent.get(`/dashboard?today=${TODAY}`)).body.repliesNeedingAttention).toBe(1);
+  });
+
+  it('GET /customers/:id includes risk, reminder history per invoice and replies', async () => {
+    const ids = await seedDashboard();
+    const db = getPool();
+    const { rows: [inv] } = await db.query(`select id from invoices where invoice_ref = 'INV-A1'`);
+    await db.query(`insert into reminders (invoice_id, stage, tone, subject, body, status, sent_at) values ($1, 4, 'final', 's', 'b', 'sent', now())`, [inv.id]);
+    await db.query(
+      `insert into replies (gmail_message_id, gmail_thread_id, invoice_id, customer_id, classification, extracted_date, snippet, received_at) values ('m1', 't1', $1, $2, 'promise_to_pay', '2026-11-06', 'next Friday', now())`,
+      [inv.id, ids.A],
+    );
+    const agent = await loggedInAgent();
+    const res = await agent.get(`/customers/${ids.A}?today=${TODAY}`).expect(200);
+    expect(res.body.risk.label).toBe('high');
+    expect(res.body.invoices).toHaveLength(6);
+    expect(res.body.invoices.find((i: { invoice_ref: string }) => i.invoice_ref === 'INV-A1').reminders).toMatchObject([{ stage: 4, tone: 'final', status: 'sent' }]);
+    expect(res.body.replies).toMatchObject([{ classification: 'promise_to_pay', extracted_date: '2026-11-06', invoice_ref: 'INV-A1' }]);
+  });
+
+  it('GET /import/sample.csv downloads the clean sample', async () => {
+    const agent = await loggedInAgent();
+    const res = await agent.get('/import/sample.csv').expect(200);
+    expect(res.headers['content-disposition']).toContain('payment-reminder-sample.csv');
+    expect(res.text.split('\n')[0]).toBe('kind,customer_name,customer_email,invoice_ref,amount,currency,issue_date,due_date,billing_day,amount_per_period,recurring_start');
+  });
+
   it('rejects a malformed ?today', async () => {
     const agent = await loggedInAgent();
     await agent.get('/dashboard?today=2026-02-30').expect(400);

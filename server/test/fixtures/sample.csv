@@ -1,0 +1,6 @@
+kind,customer_name,customer_email,invoice_ref,amount,currency,issue_date,due_date,billing_day,amount_per_period,recurring_start
+one_off,Northwind Studio,billing@northwind.example,INV-2041,1850.00,USD,2026-09-15,2026-10-15,,,
+one_off,Harbor & Pine,accounts@harborpine.example,INV-2042,640.00,USD,2026-10-01,2026-10-31,,,
+one_off,Kettle Coffee Co,owner@kettlecoffee.example,INV-2043,2300.00,USD,2026-10-20,2026-11-19,,,
+recurring,Maple Street Flat 2B,tenant2b@maplestreet.example,,,USD,,,1,1450.00,2026-09-01
+recurring,Lumen Analytics,finance@lumen.example,,,USD,,,15,3200.00,2026-08-15

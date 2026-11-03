@@ -13,6 +13,14 @@ export interface AgingCustomer {
   name: string;
 }
 
+export interface AgingReply {
+  status: 'new' | 'reviewed';
+  classification: string;
+}
+
+/** Reply classes the agent never acts on by itself: the user has to look at them. */
+export const ATTENTION_CLASSES = ['dispute', 'already_paid', 'needs_review'];
+
 export type BucketName = 'due_soon' | 'late_1_7' | 'late_8_30' | 'late_30_plus';
 export type Buckets<A = number> = Record<BucketName, { count: number; amount: A }>;
 
@@ -49,6 +57,8 @@ export interface DashboardSummary {
     currency: string;
     promiseDate: string;
   }>;
+  /** New replies classified dispute / already_paid / needs_review. */
+  repliesNeedingAttention: number;
 }
 
 const BUCKETS: BucketName[] = ['due_soon', 'late_1_7', 'late_8_30', 'late_30_plus'];
@@ -66,12 +76,12 @@ export function bucketFor(dueDate: string, today: string): BucketName | null {
 
 /**
  * Dashboard numbers for `today`. `invoices` should include paid ones too (they drive the risk score).
- * `replies` is accepted for the dashboard's future reply widgets; promises come from `invoice.promise_date`.
+ * Promises come from `invoice.promise_date`; `replies` gives the "needs attention" count.
  */
 export function summarize(
   invoices: AgingInvoice[],
   customers: AgingCustomer[],
-  _replies: unknown[],
+  replies: AgingReply[],
   today: string,
 ): DashboardSummary {
   const nameOf = new Map(customers.map((c) => [c.id, c.name]));
@@ -160,5 +170,6 @@ export function summarize(
     byCurrency,
     callFirst,
     promisesThisWeek,
+    repliesNeedingAttention: replies.filter((r) => r.status === 'new' && ATTENTION_CLASSES.includes(r.classification)).length,
   };
 }

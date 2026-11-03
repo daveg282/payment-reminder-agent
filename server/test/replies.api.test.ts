@@ -172,15 +172,53 @@ describe.skipIf(!hasTestDb)('reply detection (mocked Gmail + Gemini)', () => {
   });
 });
 
-describe.skipIf(!hasTestDb)('POST /jobs/run (scheduler)', () => {
+describe.skipIf(!hasTestDb)('POST /jobs/run (scheduler) and GET /jobs/runs/latest', () => {
   useTestDb();
+  beforeEach(() => {
+    gmail.threadMessages.mockReset().mockResolvedValue([OURS, customerMsg('cust-1')]);
+    gmail.messageText.mockReset().mockResolvedValue('I will pay on the 13th.');
+    ai.classifyReply.mockReset();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
 
   it('needs the X-Job-Secret header, not a session', async () => {
     const app = createApp();
     await request(app).post('/jobs/run').expect(401);
     await request(app).post('/jobs/run').set('X-Job-Secret', 'wrong').expect(401);
-    const res = await request(app).post(`/jobs/run?today=${TODAY}`).set('X-Job-Secret', 'test-job-secret').expect(200);
-    expect(res.body).toMatchObject({ recurringCreated: 0, draftsCreated: 0, repliesProcessed: 0, errors: [] });
     await request(app).post('/jobs/run-now').set('X-Job-Secret', 'test-job-secret').expect(401); // run-now needs login
+    await request(app).get('/jobs/runs/latest').expect(401);
+  });
+
+  it('returns 202 with the run id at once, runs in the background, and refuses to overlap (409)', async () => {
+    await seed();
+    // Hold the run open inside the reply step until the test releases it.
+    let release!: () => void;
+    ai.classifyReply.mockImplementation(
+      () => new Promise((resolve) => (release = () => resolve(verdict('promise_to_pay', '2026-11-13')))),
+    );
+    const app = createApp();
+    const started = await request(app).post(`/jobs/run?today=${TODAY}`).set('X-Job-Secret', 'test-job-secret').expect(202);
+    expect(started.body).toEqual({ runId: expect.stringMatching(/^[0-9a-f-]{36}$/), status: 'started' });
+
+    await vi.waitFor(() => expect(ai.classifyReply).toHaveBeenCalled(), { timeout: 20_000 });
+    await request(app).post(`/jobs/run?today=${TODAY}`).set('X-Job-Secret', 'test-job-secret').expect(409);
+    const agent = await loggedInAgent();
+    await agent.post(`/jobs/run-now?today=${TODAY}`).expect(409);
+    const during = (await agent.get('/jobs/runs/latest').expect(200)).body.run;
+    expect(during).toMatchObject({ id: started.body.runId, running: true, finished_at: null, summary: null });
+
+    release();
+    await vi.waitFor(async () => {
+      const { run } = (await agent.get('/jobs/runs/latest')).body;
+      expect(run.running).toBe(false);
+    }, { timeout: 20_000, interval: 300 });
+    const after = (await agent.get('/jobs/runs/latest')).body.run;
+    expect(after).toMatchObject({ id: started.body.runId, error: null, summary: { repliesProcessed: 1, errors: [] } });
+    expect(await count('job_runs')).toBe(1);
+  });
+
+  it('latest is null before any run', async () => {
+    const agent = await loggedInAgent();
+    expect((await agent.get('/jobs/runs/latest').expect(200)).body).toEqual({ run: null });
   });
 });

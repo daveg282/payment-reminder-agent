@@ -24,13 +24,36 @@ export class JobsBusyError extends Error {
 let running = false;
 
 /**
+ * Starts the scheduled work and returns as soon as its job_runs row exists; `done` settles when it finishes.
+ * A simple in-process lock prevents overlap: a second start while one is running throws JobsBusyError.
+ */
+export async function startJobs(today: string): Promise<{ runId: string; done: Promise<JobSummary> }> {
+  if (running) throw new JobsBusyError();
+  running = true; // taken synchronously, before any await
+  let runId: string;
+  try {
+    runId = await startJobRun(getPool());
+  } catch (err) {
+    running = false;
+    throw err;
+  }
+  const done = runSteps(today, runId).finally(() => {
+    running = false;
+  });
+  return { runId, done };
+}
+
+/** Runs the jobs and waits for the summary. */
+export async function runJobs(today: string): Promise<JobSummary> {
+  return (await startJobs(today)).done;
+}
+
+/**
  * The scheduled work, in order; each step has its own try/catch so one failure doesn't stop the rest:
  * 1. recurring invoices  2. clear broken promises  3. draft due reminders  4. check replies.
- * Never sends email — drafts wait for the user's approval. A simple in-process lock prevents overlap.
+ * Never sends email — drafts wait for the user's approval.
  */
-export async function runJobs(today: string): Promise<JobSummary> {
-  if (running) throw new JobsBusyError();
-  running = true;
+async function runSteps(today: string, runId: string): Promise<JobSummary> {
   const db = getPool();
   const summary: JobSummary = { recurringCreated: 0, promisesCleared: 0, draftsCreated: 0, draftsByAi: 0, draftsByTemplate: 0, repliesProcessed: 0, errors: [] };
   const fail = (step: string, err: unknown) => {
@@ -39,38 +62,32 @@ export async function runJobs(today: string): Promise<JobSummary> {
   };
 
   try {
-    const runId = await startJobRun(db);
-
-    try {
-      summary.recurringCreated = (await generateRecurringInvoices(db, today)).invoicesCreated;
-    } catch (err) {
-      fail('recurring', err);
-    }
-
-    const broken = new Map<string, string>();
-    try {
-      for (const b of await clearBrokenPromises(db, today)) broken.set(b.id, b.promise_date);
-      summary.promisesCleared = broken.size;
-    } catch (err) {
-      fail('broken promises', err);
-    }
-
-    try {
-      Object.assign(summary, await createDueDrafts(db, today, broken));
-    } catch (err) {
-      fail('drafts', err);
-    }
-
-    try {
-      summary.repliesProcessed = (await checkReplies(db, today)).repliesProcessed;
-    } catch (err) {
-      // Includes Gemini 429/5xx: reply detection pauses for this run, the schedule is unchanged.
-      fail('replies', err);
-    }
-
-    await finishJobRun(db, runId, summary, summary.errors.length ? summary.errors.join('; ') : null);
-    return summary;
-  } finally {
-    running = false;
+    summary.recurringCreated = (await generateRecurringInvoices(db, today)).invoicesCreated;
+  } catch (err) {
+    fail('recurring', err);
   }
+
+  const broken = new Map<string, string>();
+  try {
+    for (const b of await clearBrokenPromises(db, today)) broken.set(b.id, b.promise_date);
+    summary.promisesCleared = broken.size;
+  } catch (err) {
+    fail('broken promises', err);
+  }
+
+  try {
+    Object.assign(summary, await createDueDrafts(db, today, broken));
+  } catch (err) {
+    fail('drafts', err);
+  }
+
+  try {
+    summary.repliesProcessed = (await checkReplies(db, today)).repliesProcessed;
+  } catch (err) {
+    // Includes Gemini 429/5xx: reply detection pauses for this run, the schedule is unchanged.
+    fail('replies', err);
+  }
+
+  await finishJobRun(db, runId, summary, summary.errors.length ? summary.errors.join('; ') : null);
+  return summary;
 }
