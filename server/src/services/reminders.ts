@@ -94,11 +94,17 @@ export async function approveAndSend(id: string): Promise<Reminder> {
     throw new HttpError(409, 'reminders for this invoice are paused by a promise to pay; nothing was sent');
   }
 
+  const { rows } = await db.query<{ email: string }>('select email from customers where id = $1', [invoice.customer_id]);
+  const to = rows[0].email;
+  const allowlist = getConfig().SEND_ALLOWLIST;
+  if (allowlist && !allowlist.includes(to.toLowerCase())) {
+    throw new HttpError(403, `This demo only sends to its own test inbox, and ${to} isn't on the allowlist, so nothing was sent.`);
+  }
+
   const reminder = await claimForSending(db, id);
   if (!reminder) throw new HttpError(409, `reminder is ${existing.status}; only drafts or failed sends can be approved`);
 
   try {
-    const { rows } = await db.query<{ email: string }>('select email from customers where id = $1', [invoice.customer_id]);
     const gmail = gmailFor(token.refresh_token);
     const previous = reminder.stage > 1 ? await previousSent(db, reminder.invoice_id, reminder.stage) : undefined;
     const inReplyTo = previous?.gmail_message_id ? await gmail.messageIdHeader(previous.gmail_message_id) : null;
@@ -106,7 +112,7 @@ export async function approveAndSend(id: string): Promise<Reminder> {
     const raw = buildRawMessage({
       fromName: getConfig().SENDER_NAME,
       fromAddress: token.email,
-      to: rows[0].email,
+      to,
       subject: reminder.subject,
       body: reminder.body,
       inReplyTo,

@@ -17,6 +17,7 @@ vi.mock('../src/services/google', async (importOriginal) => ({
 }));
 
 import { createApp } from '../src/app';
+import { resetConfig } from '../src/config';
 import { getPool } from '../src/db';
 import { runJobs } from '../src/jobs/runJobs';
 import { count, hasTestDb, loggedInAgent, useTestDb } from './helpers';
@@ -123,6 +124,30 @@ describe.skipIf(!hasTestDb)('reminders: drafts, approval and send (mocked Gmail)
     const retried = await agent.post(`/reminders/${draft.id}/approve`).expect(200);
     expect(retried.body).toMatchObject({ status: 'sent', error: null });
     expect(gmail.send).toHaveBeenCalledTimes(2);
+  });
+
+  it('SEND_ALLOWLIST: refuses (and keeps the draft) for any address not on it', async () => {
+    await seedInvoice(); // customer: aster@example.com
+    await connectGoogle();
+    const agent = await loggedInAgent();
+    await agent.post('/jobs/run-now?today=2026-11-03');
+    const [draft] = (await agent.get('/reminders?status=draft')).body;
+    try {
+      process.env.SEND_ALLOWLIST = 'demo-inbox@example.com, Someone@Example.org';
+      resetConfig();
+      const refused = await agent.post(`/reminders/${draft.id}/approve`).expect(403);
+      expect(refused.body.error).toContain("aster@example.com isn't on the allowlist, so nothing was sent");
+      expect(gmail.send).not.toHaveBeenCalled();
+      expect((await agent.get('/reminders?status=draft')).body.map((r: { id: string }) => r.id)).toEqual([draft.id]); // still a draft
+
+      process.env.SEND_ALLOWLIST = 'demo-inbox@example.com, ASTER@example.com'; // case-insensitive
+      resetConfig();
+      await agent.post(`/reminders/${draft.id}/approve`).expect(200);
+      expect(gmail.send).toHaveBeenCalledTimes(1);
+    } finally {
+      delete process.env.SEND_ALLOWLIST;
+      resetConfig();
+    }
   });
 
   it('refuses to send without a Google connection, or for a paid or promised invoice', async () => {

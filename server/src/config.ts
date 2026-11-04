@@ -16,6 +16,12 @@ const envSchema = z.object({
   GEMINI_MODEL: z.string().optional(),
   SENDER_NAME: z.string().default(''),
   JOB_SECRET: z.string().optional(),
+  // Comma-separated addresses. When set, reminders can only be sent to these (a demo deployment that
+  // other people can log into must never email a real customer address).
+  SEND_ALLOWLIST: z
+    .string()
+    .optional()
+    .transform((s) => (s ? s.split(',').map((a) => a.trim().toLowerCase()).filter(Boolean) : null)),
 });
 
 export type Config = z.infer<typeof envSchema>;

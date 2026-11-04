@@ -70,6 +70,7 @@ Server — copy `server/.env.example` to `server/.env`:
 | `GOOGLE_REDIRECT_URI` | e.g. `http://localhost:4000/auth/google/callback` |
 | `CLIENT_ORIGIN` | The frontend origin, for CORS, e.g. `http://localhost:5173` |
 | `SENDER_NAME` | Name shown on outgoing reminders |
+| `SEND_ALLOWLIST` | Optional, comma-separated. When set, *Approve & send* refuses any recipient not on the list (the live demo uses this so nobody can email a real address) |
 | `PORT` | Defaults to 4000 |
 | `SHEET_ID` | Reserved for an optional Google Sheet source (not used yet) |
 | `DEMO_LIVE_EMAIL` | Demo seed only: the inbox you reply from in the demo |
