@@ -17,6 +17,8 @@ function DraftCard({ initial }: { initial: Reminder }) {
   const { refresh } = useRefresh();
 
   useEffect(() => setR(initial), [initial]);
+  // The edit/approve/skip endpoints return the bare reminder row; keep the customer, invoice and risk we already have.
+  const merge = (updated: Partial<Reminder>) => setR((prev) => ({ ...prev, ...updated, customer: prev.customer, invoice: prev.invoice, risk: prev.risk }));
   const dirty = subject !== r.subject || body !== r.body;
   const editable = r.status === 'draft';
 
@@ -24,7 +26,7 @@ function DraftCard({ initial }: { initial: Reminder }) {
     setBusy('save');
     setError(undefined);
     try {
-      setR(await api.updateReminder(r.id, subject.trim(), body.trim()));
+      merge(await api.updateReminder(r.id, subject.trim(), body.trim()));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -38,12 +40,12 @@ function DraftCard({ initial }: { initial: Reminder }) {
     try {
       if (dirty && editable) await api.updateReminder(r.id, subject.trim(), body.trim());
       const sent = await api.approve(r.id);
-      setR(sent);
+      merge(sent);
       toast(`Sent to ${r.customer.email}.`);
       refresh();
     } catch (err) {
       const body = (err as { body?: Reminder }).body;
-      if (body?.status === 'failed') setR(body); // the send failed; show Retry
+      if (body?.status === 'failed') merge(body); // the send failed; show Retry
       setError((err as Error).message);
     } finally {
       setBusy(undefined);
@@ -54,7 +56,7 @@ function DraftCard({ initial }: { initial: Reminder }) {
   async function skip() {
     setBusy('skip');
     try {
-      setR(await api.skip(r.id));
+      merge(await api.skip(r.id));
       toast(`Skipped stage ${r.stage} for ${r.invoice.invoice_ref}.`);
       refresh();
     } catch (err) {
